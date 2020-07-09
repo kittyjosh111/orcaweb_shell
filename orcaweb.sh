@@ -1,4 +1,5 @@
 #!/bin/bash
+#orcaweb_url="https://orca.kittyjosh.com"
 orca_ver=4.2.1
 openmpi_ver=3.1.4
 orca_path="/opt/orca-${orca_ver}"
@@ -32,13 +33,21 @@ for d in */ ; do
 	nonce=$(echo $d | sed 's:/*$::')
 	inp_filename=$(<inp_filename)
 	email=$(<request_email)
+	email_url=$(php -r "echo rawurlencode('$email');")
         echo "orca $inp_filename > $inp_filename.out"
+	echo "Thank you for using orcaweb at $orcaweb_url, brought to you by Joshua Shi <joshua.shi@gmail.com>. A new orca job has been started for input file $inp_filename. You can check the status at $orcaweb_url/status.php?q=$nonce&e=$email_url" | mutt -s "orca started for $inp_filename" $email
 	rm pending
         orca $inp_filename > $inp_filename.out
+	retVal=$?
+	if [ $retVal -ne 0 ]; then
+	    echo "Error"
+	    echo "Thank you for using orcaweb at $orcaweb_url, brought to you by Joshua Shi <joshua.shi@gmail.com>. A new orca job has failed for input file $inp_filename. You can check the out file at $orcaweb_url/status.php?q=$nonce&e=$email_url" | mutt -s "orca FAILED for $inp_filename" $email
+            continue
+        fi
 	touch completed
 	cd ..
 	tar -czvf $inp_filename.$nonce.tar.gz $d
-	echo "Thank you for using orcaweb at https://orca.kittyjosh.com, brought to you by Joshua Shi <joshua.shi@gmail.com>. Please find the orca result attached." | mutt -s "orca result for $inp_filename" $email -a $inp_filename.$nonce.tar.gz
+	echo "Thank you for using orcaweb at $orcaweb_url, brought to you by Joshua Shi <joshua.shi@gmail.com>. Please find the orca result attached." | mutt -s "orca result for $inp_filename" $email -a $inp_filename.$nonce.tar.gz
 	cd $d
     fi
     cd ..
